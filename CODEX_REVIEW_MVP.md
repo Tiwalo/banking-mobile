@@ -1,0 +1,7 @@
+# Independent review — read only
+
+Review the specified branch diff against its approved base, feature plan, AGENTS.md and relevant ADRs/contract. Do not modify files, push, merge, or expose secrets. Report evidence-backed defects only; no required finding count. For routine UI use a focused check; substantial integration one independent reviewer; auth/transfers/release two independent perspectives (architecture/security vs financial correctness/device verification). Separate sessions where possible; do not claim independence if self-review only. No cross-model subscription requirement.
+
+Check scope, compatibility, contract drift, auth/session/privacy, money parsing, backend authority, idempotency and actor isolation, unknown outcome recovery, UI/a11y, failure tests and evidence. Check that fixtures/gallery cannot ship as live features and QA reports separate simulated/live data. Validate commands/results where available; run safe targeted checks only if authorized.
+
+Output: severity (critical/high/medium/low), file:line, evidence, impact, actionable fix. Deduplicate findings, mark unverified suspicions separately, state whether acceptance gates pass or are blocked. No invented bugs or style-only critical findings. Recommend merge only if required checks and reviews pass; human makes final decision. After fixes, recheck affected blocking findings; stop unless new evidence warrants further review.

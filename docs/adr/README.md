@@ -1,0 +1,2 @@
+# Architecture decision records
+Create an ADR only for consequential approved decisions, not every code choice. Use sequential IDs, do not rewrite accepted history silently; supersede explicitly. Candidate subjects: Expo/styling, router, Keycloak/native session lifecycle, secure attempt recovery, OpenAPI ownership/pinning, PHP precision, state management, design tokens/assets, EAS preview/security. These are candidates, not newly accepted decisions. Existing approved requirements are in AGENTS and the design/contract docs. Use template.md.
