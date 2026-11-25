@@ -1,22 +1,37 @@
-import { Stack } from "expo-router";
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
+import { Text } from 'react-native';
+
+import { PreviewContext, stackOptions } from '@/navigation/shell';
+import { ScreenContainer } from '@/ui/screen-container';
+import { useTiwaloFonts } from '@/ui/use-tiwalo-fonts';
 
 export default function RootLayout() {
-  if (__DEV__) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Keep gallery header styling out of the production entry.
-    const { colors }: typeof import("@/ui/tokens") = require("@/ui/tokens");
+  const [previewActive, setPreviewActive] = useState(false);
+  const [fontsLoaded, fontError] = useTiwaloFonts();
+  const canPreview = __DEV__ && previewActive;
+
+  if (!fontsLoaded && !fontError) {
     return (
-      <Stack>
-        <Stack.Screen
-          name="index"
-          options={{
-            title: "Component gallery",
-            headerStyle: { backgroundColor: colors.surface.card },
-            headerTintColor: colors.text.heading,
-          }}
-        />
-      </Stack>
+      <ScreenContainer>
+        <Text accessibilityLiveRegion="polite">Loading Tiwalo…</Text>
+      </ScreenContainer>
     );
   }
 
-  return <Stack />;
+  return (
+    <PreviewContext.Provider value={__DEV__ ? { active: canPreview, setActive: setPreviewActive } : null}>
+      <StatusBar style="dark" />
+      <Stack screenOptions={stackOptions}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Protected guard={canPreview} redirectTo="/">
+          <Stack.Screen name="(customer)" options={{ headerShown: false }} />
+        </Stack.Protected>
+        <Stack.Protected guard={__DEV__} redirectTo="/">
+          <Stack.Screen name="component-gallery" options={{ title: 'Component gallery' }} />
+        </Stack.Protected>
+      </Stack>
+    </PreviewContext.Provider>
+  );
 }

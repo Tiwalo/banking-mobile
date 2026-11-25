@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentRef, type PropsWithChildren, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Keyboard, type ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { type PropsWithChildren, useState, useSyncExternalStore } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AccountCard, BalanceCard, BrandWordmark, ReceiptCard, StatusBadge, TransactionRow } from '@/ui/banking-components';
 import { Button } from '@/ui/button';
@@ -12,6 +11,7 @@ import { parsePesoDraft } from '@/ui/php-money';
 import { ScreenContainer } from '@/ui/screen-container';
 import { TiwaloText } from '@/ui/tiwalo-text';
 import { colors, radius, space } from '@/ui/tokens';
+import { useAndroidFieldReveal } from '@/ui/use-android-field-reveal';
 import { useTiwaloFonts } from '@/ui/use-tiwalo-fonts';
 
 const account = {
@@ -49,42 +49,7 @@ function GalleryExamples() {
   const [amountTouched, setAmountTouched] = useState(false);
   const [retried, setRetried] = useState(false);
   const parsedAmount = parsePesoDraft(amount);
-  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
-  const amountField = useRef<ComponentRef<typeof View>>(null);
-  const amountFocused = useRef(false);
-  const { top } = useSafeAreaInsets();
-
-  const revealAmountField = useCallback(() => {
-    if (process.env.EXPO_OS !== 'android' || !amountFocused.current) return;
-
-    const keyboard = Keyboard.metrics();
-    const scroll = scrollRef.current;
-    const viewport = scroll?.getNativeScrollRef();
-    const content = scroll?.getInnerViewRef();
-    const field = amountField.current;
-    if (!keyboard || !scroll || !viewport || !content || !field) return;
-
-    viewport.measureInWindow((_x, viewportTop, _width, viewportHeight) => {
-      field.measureInWindow((_fieldX, fieldTop, _fieldWidth, fieldHeight) => {
-        // Keyboard coordinates include the system bar. Window measurements can exclude it.
-        const visibleBottom = Math.min(viewportTop + viewportHeight, keyboard.screenY - top);
-        const overlap = fieldTop + fieldHeight + space.sm - visibleBottom;
-        if (overlap <= 0) return;
-
-        content.measureInWindow((_contentX, contentTop) => {
-          if (amountFocused.current && Keyboard.isVisible()) {
-            scroll.scrollTo({ y: viewportTop - contentTop + overlap, animated: false });
-          }
-        });
-      });
-    });
-  }, [top]);
-
-  useEffect(() => {
-    if (process.env.EXPO_OS !== 'android') return;
-    const subscription = Keyboard.addListener('keyboardDidShow', revealAmountField);
-    return () => subscription.remove();
-  }, [revealAmountField]);
+  const { scrollRef, fieldRef, reveal, onFocus, onBlur } = useAndroidFieldReveal();
 
   return (
     <ScreenContainer
@@ -122,17 +87,14 @@ function GalleryExamples() {
           placeholder="Enter sample text"
         />
         <TextField label="Read-only example" value="Demo entry" onChangeText={setText} disabled />
-        <View ref={amountField} collapsable={false} onLayout={revealAmountField}>
+        <View ref={fieldRef} collapsable={false} onLayout={reveal}>
           <MoneyInput
             label="Demo amount"
             value={amount}
             onChangeText={setAmount}
-            onFocus={() => {
-              amountFocused.current = true;
-              requestAnimationFrame(revealAmountField);
-            }}
+            onFocus={onFocus}
             onBlur={() => {
-              amountFocused.current = false;
+              onBlur();
               setAmountTouched(true);
             }}
             hint="Enter pesos with up to two decimal places."
