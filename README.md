@@ -13,6 +13,10 @@ npm start
 
 The entry screen runs without service credentials or an environment file. The Android, iOS, and web scripts start the Expo dev server for those targets. Keep screens in `src/app`. The optional `.env.example` documents public settings reserved for later integration. Anything prefixed with `EXPO_PUBLIC_` is visible in the app bundle.
 
+## Development component gallery
+
+Run `npm start` and open the root screen in a compatible Expo Go client. The gallery opens with labeled synthetic examples. To check the production entry, use `npx expo start --no-dev --minify` and reload the client. See the [M0-02 plan](prompts/M0-02-design-system.md) for component and device verification.
+
 ## Verify a change
 
 ```sh
