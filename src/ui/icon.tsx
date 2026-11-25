@@ -4,6 +4,8 @@ import { StyleSheet } from 'react-native';
 import { colors } from './tokens';
 
 const icons = {
+  home: require('../../assets/icons/house.svg'),
+  profile: require('../../assets/icons/user-round.svg'),
   incoming: require('../../assets/icons/arrow-down-left.svg'),
   outgoing: require('../../assets/icons/arrow-up-right.svg'),
   error: require('../../assets/icons/circle-alert.svg'),
