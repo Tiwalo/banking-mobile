@@ -1,0 +1,37 @@
+# Tiwalo mobile MVP roadmap
+
+M0-01 is implemented and passed local acceptance in the verification worktree. Human delivery approval, hosted CI and merge precede the next feature, M0-02. Each feature uses the [plan template](../prompts/template.md), one scoped PR and a branch from updated main after prerequisite merges. Record actual fixture, device and integrated results separately.
+
+## Architecture and contract
+
+Retain Expo 58.0.26, React Native 0.88.1, Expo Router 58.0.32, strict TypeScript and routes in `src/app`. Mobile handles presentation, secure sessions and permitted commands for synthetic customers. Spring owns authorization and all financial state. Share the [written design](design/TIWALO_MVP_DESIGN_SPEC.md) and approved assets with web. The five tabs are Home, Accounts, Send, Activity and Profile. Receipt is a protected stack detail reached from Send or contracted Activity. Only an opaque transfer reference belongs in a receipt link; authentication and ownership checks precede display.
+
+The M1 input is banking-core-api commit `fc06aebdc53ae2e4a28e54aaeb875294e317e8c1`, `api/openapi/banking-v1.yaml`, SHA-256 `b3247ef65918185e10281d1162407a0cb9d623a4da62ebcbc8ef89bdde16bb49`. OpenAPI 3.1.1 describes API 1.1.0 under `/api/v1`. Expose list/get owned accounts, create internal transfer, and get initiator receipt. Validate actual responses, map RFC 9457 codes and keep PHP centavos as lossless decimal strings through 9223372036854775807. Generating and testing the mobile adapter is M1 work.
+
+Roadmap defaults are typed StyleSheet tokens, light appearance, licensed native Inter and Lucide; TanStack Query for actor-scoped in-memory reads; React Hook Form and Zod for draft input. The backend schema governs wire validation. Keep synthetic gallery fixtures isolated from release navigation and authentication.
+
+Use system-browser Keycloak Authorization Code + PKCE with a public client and exact environment-specific redirects. Keep access tokens in memory. When supported by realm policy, retain the refresh credential in SecureStore and serialize refresh. Clear secrets, protected navigation and reads on logout or actor switch, and discard late responses. Complete local sign-out even if remote revocation fails.
+
+Persist the reviewed canonical request and one cryptographically strong key, bound to actor and environment, before the first POST. A persistence failure blocks submission. A valid 201 POSTED confirms success and permits balance invalidation. A contracted 422 is a definite decline; 409 stops replay for conflict investigation. Timeout, interruption, 503 and unverifiable success leave the outcome unknown. Resolve a known ID by receipt GET, otherwise offer explicit identical-payload, same-key replay after authenticating the same actor. Preserve unresolved attempts across restart and reauthentication. Changed intent requires fresh review and key. Disable automatic POST retries, offline queuing, duplicate taps and optimistic balance updates.
+
+## Feature sequence and acceptance
+
+| Milestone and initial branch | Features in order | Required evidence |
+| --- | --- | --- |
+| M0 · `chore/mobile-verification` | [01 Foundation](../prompts/M0-01-foundation.md) → 02 Design system and dev gallery → 03 Navigation | Clean install and deterministic CI. Verify contrast, status labels and icons, scaling, touch targets, safe areas and small screens. Exercise all five tabs, protected receipt links, and gallery exclusion in release mode. Record native smoke evidence per platform. |
+| M1 · `feat/mobile-api-contract` | 01 Contract pin and customer adapter → 02 Money, problems and contract tests | After foundation, reproduce generation offline and detect drift. Cover malformed responses, zero balance, positive-only transfers, large centavo values, max and overflow. |
+| M2 · `feat/mobile-auth-accounts` | 01 Native session → 02 Owned accounts and Home preview | Requires M0 navigation, M1 and reachable B2. Prove Android and iOS dev-build callbacks cold and warm, expiry, logout, cache isolation, pagination and ownership denial. |
+| M3 · `feat/mobile-account-balances` | 01 Live balances and detail → 02 Activity availability | Requires M2 and funded B3 accounts. Verify balances against the service and exercise loading, empty, offline, error and refresh states. Show a selected account balance on Home; a partial account page cannot establish the total. |
+| M4 · `feat/mobile-internal-transfers` | 01 Draft and review → 02 Submit and recover → 03 Verified receipt | Fixtures may follow M0/M1. Live acceptance needs M2/M3 and B4. Test response loss after commit, duplicate taps, restart, expiry, changed draft, wrong actor, 409/422/503, replayed decline and receipt reopening. Require independent backend evidence of one posting and balanced ledger effects. |
+| M5 · `chore/mobile-mvp-hardening` | 01 Accessibility and privacy → 02 Integrated journeys | After integrated M2–M4, verify Maestro journeys, VoiceOver/TalkBack, large fonts, small screens, privacy and release fixture exclusion. Obtain independent security and correctness perspectives for auth and transfers. |
+| M6 · `chore/mobile-release-verification` | 01 Internal candidates → 02 Cross-client release verification | After M5, use approved signing and isolated services. A sends once on mobile and reopens the receipt; B verifies the balance on web; an authorized operator checks B5 findings. Track history separately until contracted or explicitly deferred. Human review gates internal release. |
+
+[ADR 0001](adr/0001-mobile-foundation.md) is accepted for the foundation. Record later decisions at their owning features: 0002 design and assets (M0-02), 0003 contract and PHP (M1), 0004 native identity, redirects and actor isolation (M2), 0005 durable recovery (M4), 0006 distribution and trusted QA (M5–M6). GitHub Actions owns deterministic checks. Optional cloud simulators and agentic QA require separate access, cost and security approval under the [QA setup](qa/EXPO_QA_SETUP.md).
+
+## Blockers and available work
+
+- **Delivery:** M0-01 awaits authorization to commit, push and open a PR, hosted CI, then human merge approval. Local deterministic acceptance and independent review are recorded in the feature plan.
+- **Native evidence:** Android API 34 failed during Expo Go installation and timed out on cold boot. iOS remains unverified. A working device or approved simulator is required for native acceptance. Component and gallery work can proceed after foundation delivery.
+- **Brand asset:** The web vector is untracked. Use the temporary wordmark until stable approved source is available. Sourcing native Inter and building the gallery are implementation tasks.
+- **Live integration:** The inspected backend implements the customer operations. The local services were unreachable, and the checked-in realm lacks the required native browser-flow setup. The environment owner supplies reachable issuer/API, public client, exact redirects, mapped synthetic users, roles, funded accounts and later signing access. M1 can proceed from the immutable artifact.
+- **Contract gaps:** History, recipient-name lookup, receipt enumeration and application profile fields are absent. Keep Activity truthful, preserve the opaque recipient reference, expose authorized session information in Profile, and reopen known receipts by ID. Same-key replay covers response loss without a receipt ID. B5 operations stay in web/backend scope.
