@@ -1,0 +1,13 @@
+{
+  "name": "tiwalo-contract-tools",
+  "private": true,
+  "version": "1.0.0",
+  "devDependencies": {
+    "ajv": "8.18.0",
+    "ajv-formats": "3.0.1",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "yaml": "2.8.4"
+  },
+  "packageManager": "npm@11.14.0"
+}

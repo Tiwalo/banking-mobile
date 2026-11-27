@@ -1,0 +1,2 @@
+api/openapi/banking-v1.yaml -text
+src/api/generated/* text eol=lf

@@ -5,6 +5,15 @@ function isWithinMinorRange(digits: string, limit: string): boolean {
   return digits.length < limit.length || (digits.length === limit.length && digits <= limit);
 }
 
+function isCanonicalMagnitude(digits: string, limit: string): boolean {
+  return /^(0|[1-9][0-9]*)$/.test(digits) && isWithinMinorRange(digits, limit);
+}
+
+/** Validates a nonnegative PHP centavo value in the API's wire format. */
+export function parsePhpMinor(value: unknown): string | null {
+  return typeof value === 'string' && isCanonicalMagnitude(value, MAX_MINOR) ? value : null;
+}
+
 /** Converts a completed, unsigned peso draft to a canonical centavo string. */
 export function parsePesoDraft(draft: string): string | null {
   const value = draft.trim();
@@ -15,19 +24,17 @@ export function parsePesoDraft(draft: string): string | null {
 
   const [whole, fraction = ''] = value.split(/[.,]/);
   const minor = (whole + fraction.padEnd(2, '0')).replace(/^0+(?=[0-9])/, '');
-  return isWithinMinorRange(minor, MAX_MINOR) ? minor : null;
+  return parsePhpMinor(minor);
 }
 
 /** Formats a canonical signed centavo string without converting it to a number. */
 export function formatPesoMinor(minor: string): string | null {
   const negative = minor.startsWith('-');
   const magnitude = negative ? minor.slice(1) : minor;
-  if (
-    magnitude.length === 0 ||
-    /[^0-9]/.test(magnitude) ||
-    (magnitude.startsWith('0') && (negative || magnitude.length > 1)) ||
-    !isWithinMinorRange(magnitude, negative ? MIN_MINOR_MAGNITUDE : MAX_MINOR)
-  ) {
+  const valid = negative
+    ? magnitude !== '0' && isCanonicalMagnitude(magnitude, MIN_MINOR_MAGNITUDE)
+    : parsePhpMinor(magnitude) !== null;
+  if (!valid) {
     return null;
   }
 

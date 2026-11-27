@@ -4,6 +4,9 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/ui": "~58.0.29",
+    "@tanstack/react-query": "5.108.4",
+    "ajv": "8.18.0",
+    "ajv-formats": "3.0.1",
     "expo": "^58.0.26",
     "expo-constants": "~58.0.16",
     "expo-device": "~58.0.5",
@@ -46,7 +49,9 @@
     "web": "expo start --web",
     "lint": "expo lint src tests",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "contract:generate": "node scripts/contract/generate.mjs",
+    "contract:check": "node scripts/contract/generate.mjs --check"
   },
   "private": true,
   "engines": {
