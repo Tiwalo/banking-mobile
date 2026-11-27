@@ -1,4 +1,16 @@
-import { formatPesoMinor, parsePesoDraft } from '../src/ui/php-money';
+import { formatPesoMinor, parsePhpMinor, parsePesoDraft } from '../src/ui/php-money';
+
+describe('canonical PHP wire amounts', () => {
+  test.each(['0', '9007199254740993', '9223372036854775807'])('preserves %s', (value) => {
+    expect(parsePhpMinor(value)).toBe(value);
+  });
+
+  test.each([0, null, undefined, '-1', '00', '1.0', '1e3', '1\n', '9223372036854775808'])(
+    'rejects invalid wire amount %j', (value) => {
+      expect(parsePhpMinor(value)).toBeNull();
+    },
+  );
+});
 
 describe('peso draft parsing', () => {
   test.each([
