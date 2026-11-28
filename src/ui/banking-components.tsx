@@ -32,15 +32,16 @@ export function BrandWordmark() {
 
 type BalanceCardProps = {
   label: string;
-  minor: string;
   description?: string;
-};
+} & ({ minor: string; amountState?: never } | { minor?: never; amountState: string });
 
-export function BalanceCard({ label, minor, description }: BalanceCardProps) {
+export function BalanceCard({ label, minor, amountState, description }: BalanceCardProps) {
   return (
     <View style={[styles.card, styles.balance]}>
       <TiwaloText variant="label" tone="onPrimary">{label}</TiwaloText>
-      <MoneyText minor={minor} variant="display" onPrimary />
+      {minor !== undefined
+        ? <MoneyText minor={minor} variant="display" onPrimary />
+        : <TiwaloText variant="heading" tone="onPrimary" accessibilityLiveRegion="polite">{amountState}</TiwaloText>}
       {!!description && (
         <TiwaloText variant="caption" tone="onPrimary">{description}</TiwaloText>
       )}
@@ -66,7 +67,9 @@ export function AccountCard({ label, maskedReference, balance, status }: Account
         </View>
       </View>
       <TiwaloText variant="caption" tone="mutedOnCard">{balance.label}</TiwaloText>
-      <MoneyText minor={balance.minor} />
+      {balance.minor !== undefined
+        ? <MoneyText minor={balance.minor} />
+        : <TiwaloText>{balance.amountState}</TiwaloText>}
       {!!balance.description && (
         <TiwaloText variant="caption" tone="mutedOnCard">{balance.description}</TiwaloText>
       )}

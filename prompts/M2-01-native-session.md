@@ -1,0 +1,43 @@
+# M2-01 — Secure mobile authentication and session lifecycle
+
+Status: the Android SecureStore backport passed the native regression and the rebuilt debug APK launched on an API 34 emulator. Integrated native session acceptance still requires the device checks below. The earlier Android warm sign-in was verified by the user. Branch `feat/mobile-auth-accounts`, base `4e7503cddf88562e485f27e4e53812ab5ae06d6f`.
+
+## Goal and prerequisites
+
+Admit a synthetic customer to protected navigation after system-browser Keycloak sign-in and an authorized, validated account-list read. Keep the existing OpenAPI pin at `fc06aebdc53ae2e4a28e54aaeb875294e317e8c1`. Follow ADRs 0001–0003 and the SDK 58 authentication, SecureStore, development-build and Expo Router guides.
+
+## Decisions and steps
+
+1. Configure dedicated public standard-flow client `tiwalo-mobile-development`, S256, openid, banking-core-api access-token audience and rotating refresh credentials. Proposed development IDs are `com.tiwalo.banking.dev` and the exact redirect is `com.tiwalo.banking.dev:/oauth2redirect/keycloak`. The identity owner confirms namespace, issuer, device-reachable HTTPS services and customer mappings before registration.
+2. Persist a single ten-minute environment-bound request before opening the browser. Validate callback, state, nonce and directly issued tokens. Consume the request before exchange. Use authenticated TLS for the direct token response per OIDC Core 3.1.3.7. Keep credentials hosted.
+3. Store only recovery credentials and metadata in SecureStore. Require a matching install-local marker. Restore behind a closed guard, rotate atomically, serialize refresh, permit one retry of eligible GETs on contracted 401. Keep expired sessions locked on transient failure. Require new sign-in after an invalid grant or inconsistent actor.
+4. Fence reads, navigation and in-flight results by session. Dispose of the old cache on lock, logout or switch. Complete local teardown independently of revocation. Force fresh hosted authentication on the next explicit sign-in. Exclude fixture screens from integrated builds. Retain the existing branded components and simulation disclosure.
+5. Configure internal Android and iOS Simulator development clients with network inspection disabled. Keep backend provisioning, account presentation, financial commands, production registration and distribution outside this change.
+
+## Verification and rollback
+
+Run deterministic OIDC, storage, session, navigation, race and contract checks, lint, typecheck, and two independent read-only reviews. Verify warm and cold native callbacks, interrupted return, restore, expiry, logout and A/B switching with authorized synthetic users on both platforms. Record sanitized device, OS, build, contract and results. An unavailable runtime is a blocked integration gate. Rollback must ship signed-out entry and invalidate the session storage namespace before future restoration.
+
+## Implementation report
+
+- Added `src/auth/{protocol,native,vault,session,runtime,use-session}.ts` and `session-entry.tsx`. Updated the root entry, layout, native-intent handler and component gallery, the customer layout, Home, Accounts and its detail, Profile, Send, Receipt, and `src/navigation/shell.tsx`.
+- Updated `app.json`, the npm manifest and lockfile, `.env.example`, the README and the [native QA procedure](../.eas/qa-flows/authentication.md). Added `eas.json`, [ADR 0004](../docs/adr/0004-native-identity.md) and this plan. Updated the navigation suite and added auth protocol, native transport, session and router tests.
+- Retained Expo 58.0.26, React Native 0.88.1 and Expo Router 58.0.32. npm reported 22 moderate dependency advisories during installation. Dependency remediation was outside this change.
+- `npm run contract:check` passed for the pinned OpenAPI 3.1.1 document, API version 1.1.0. `npm run lint -- --no-cache`, `npm run typecheck` and the complete Jest suite passed. The suite covers 152 tests across 10 suites.
+- `npx expo config --type introspect --json` confirmed the callback scheme and disabled native network inspection in both platform configurations. Metro produced both Android and iOS production-mode JavaScript exports. Both contained the exact callback and neither contained the four checked fixture/preview markers.
+- Two independent read-only reviewers confirmed fixes for cancellation of generation-bound discovery, grant and admission requests and for a stale callback arriving during a new sign-in. The respective regression tests passed.
+- **Android QA — user verified on 2026-11-28.** Tested on the Pixel 3a Android 14 emulator with a locally built x86_64 development APK and a private HTTPS synthetic realm over ADB. APK SHA-256 `d2a570cc31b7b3bdeb497efceac80f771340862bd223daa274e76a9c9b45c5f3`. Direct observations include the Keycloak Custom Tab launch and Tiwalo Home. The user's confirmation covers Android verification without individual case results in the chat.
+- Added the [Tiwalo Keycloak login theme](../keycloak/README.md) and activated it for the isolated Android development client. Verified the hosted form and fonts at phone width. Lint, typecheck, and the focused native transport tests passed after the browser styling change.
+- **iOS native acceptance — pending.** This Windows QA setup uses emulator-local forwarding. Run the iOS development-build QA procedure on a Mac or authorized remote simulator with device-reachable HTTPS services. Hosted CI, iOS signing, and publication have yet to run.
+
+## Review corrections
+
+- HTTP 408 now follows the transient identity-service error path. A restore timeout keeps the refresh record and customer routes locked until an explicit retry. A regression test sends a mocked HTTP 408 through the identity transport, verifies that no token POST occurred, and tests restoration after retry. A separate test verifies restart cleanup when Keycloak returns `invalid_grant`.
+- A scoped read returning 403 now passes the operation denial to its caller. The account-list admission probe still denies customer entry on 403. Regression tests cover a denied receipt with continued Accounts access and a denied initial probe.
+- Explicit sign-out attempts bounded access-token revocation for a memory-only grant. Tests cover local cleanup when revocation succeeds or fails offline, and confirm the token type hint sent to Keycloak.
+- The [native QA procedure](../.eas/qa-flows/authentication.md) now records Android cold returns through the development launcher separately from direct delivery and browser-session interruption. The earlier Android warm sign-in remains the recorded device evidence. Android cold return and iOS native authentication were not run for these corrections.
+- Verification passed on Windows with Node 26.1.0. Lint, typecheck, the full Jest suite (158 tests across 10 suites), and contract verification for API 1.1.0 at `fc06aebdc53ae2e4a28e54aaeb875294e317e8c1` passed. Auth tests use mocked native boundaries. No development build or live authentication run was performed for the corrections.
+- **Android SecureStore write durability — backported, native acceptance pending.** The approved backport pins `expo-secure-store` to `58.0.3` and applies Expo’s Android implementation and failed-write regression during `npm install` or `npm ci`. Expo Autolinking compiles SecureStore from the patched source. The patch rejects a failed write and restores the prior in-memory value. Remove the exact pin, install hook, patch, and Android source-build override together when upgrading to a compatible release that includes the fix. [Upstream fix](https://github.com/expo/expo/pull/52131) · [Versioned patch](../patches/expo-secure-store-58.0.3.patch)
+- Verification on 2026-11-28 passed for ESLint, TypeScript, 20 focused auth tests, repeat patch application, and the `SecureStoreWriteTest` Android API 35 regression under Robolectric. The test blocked the preferences path with a file so it could force a failed disk commit on Windows. It verified rejection, restoration of the prior value in memory, and persistence of the prior value after a later successful write.
+- The x86_64 Android debug APK rebuilt successfully from a short local copy with a temporary CMake object path limit to work around Windows path lengths. APK SHA-256 `6e9411e14033a2904a24fdefd0b1386a5b94e16d973b30217589adf82c59a6f4`. Inspection of the APK’s DEX confirmed the backported write failure and restore code.
+- ADB installed the rebuilt APK on the Pixel 3a Android API 34 emulator and confirmed the Expo development launcher was resumed. The disk write failure was exercised in the native regression. The emulator check covered installation and launch.

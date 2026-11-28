@@ -1,0 +1,131 @@
+@font-face {
+    font-family: Inter;
+    src: url("../fonts/Inter-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: Inter;
+    src: url("../fonts/Inter-SemiBold.ttf") format("truetype");
+    font-weight: 600;
+    font-display: swap;
+}
+
+#keycloak-bg {
+    --tiwalo-background: #faf8f3;
+    --tiwalo-card: #ffffff;
+    --tiwalo-ink: #172b4d;
+    --tiwalo-heading: #092c62;
+    --tiwalo-control: #1f618d;
+    --tiwalo-outline: #dce5ef;
+    --tiwalo-focus: #092c62;
+    --tiwalo-primary: #1f618d;
+    --tiwalo-primary-active: #092c62;
+    --tiwalo-on-primary: #ffffff;
+    --pf-v5-global--FontFamily--text: Inter, system-ui, sans-serif;
+    --pf-v5-global--FontFamily--heading: var(--pf-v5-global--FontFamily--text);
+    --pf-v5-global--link--Color: var(--tiwalo-control);
+    background: var(--tiwalo-background);
+    color: var(--tiwalo-ink);
+    font: 400 1rem / 1.5 var(--pf-v5-global--FontFamily--text);
+}
+
+#keycloak-bg .pf-v5-c-login {
+    background: transparent;
+    min-inline-size: 0;
+    min-block-size: 100svh;
+    padding: max(2rem, env(safe-area-inset-top)) 1rem max(2rem, env(safe-area-inset-bottom));
+}
+
+#keycloak-bg .pf-v5-c-login__container {
+    grid-template-columns: minmax(0, 26rem);
+    justify-content: center;
+    inline-size: 100%;
+}
+
+#keycloak-bg .pf-v5-c-login__header {
+    margin: 0 0 1.5rem;
+    padding: 0;
+}
+
+#kc-header-wrapper {
+    color: var(--tiwalo-heading) !important;
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    text-transform: none;
+}
+
+#keycloak-bg .pf-v5-c-login__main {
+    --pf-v5-c-login__main--BackgroundColor: var(--tiwalo-card);
+    --pf-v5-c-login__main--BoxShadow: none;
+    border: 1px solid var(--tiwalo-outline);
+    border-radius: 1rem;
+}
+
+#keycloak-bg .pf-v5-c-login__main-header {
+    border-top: 0;
+    padding: 1.5rem 1.5rem 0.5rem;
+}
+
+#kc-page-title {
+    color: var(--tiwalo-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+#keycloak-bg .pf-v5-c-login__main-body {
+    padding-inline: 1.5rem;
+}
+
+#keycloak-bg .pf-v5-c-form-control {
+    --pf-v5-c-form-control--BorderRadius: 0.5rem;
+    min-block-size: 3rem;
+}
+
+#keycloak-bg .pf-v5-c-form-control > input {
+    font-size: 1rem;
+}
+
+#keycloak-bg .pf-v5-c-button {
+    --pf-v5-c-button--BorderRadius: 0.5rem;
+    min-block-size: 3rem;
+}
+
+#keycloak-bg .pf-v5-c-button.pf-m-primary {
+    background: var(--tiwalo-primary);
+    color: var(--tiwalo-on-primary);
+    font-weight: 600;
+}
+
+#keycloak-bg .pf-v5-c-button.pf-m-primary:is(:hover, :active) {
+    background: var(--tiwalo-primary-active);
+}
+
+#keycloak-bg :is(input, button, a, select):focus-visible {
+    outline: 2px solid var(--tiwalo-focus);
+    outline-offset: 2px;
+}
+
+.tiwalo-disclosure {
+    border-top: 1px solid var(--tiwalo-outline);
+    color: var(--tiwalo-ink);
+    font-size: 0.875rem;
+    margin: 0 1.5rem;
+    padding-block: 1rem 1.5rem;
+    text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+    #keycloak-bg {
+        --tiwalo-background: #092c62;
+        --tiwalo-card: #172b4d;
+        --tiwalo-ink: #eef4f9;
+        --tiwalo-heading: #ffffff;
+        --tiwalo-control: #5dade2;
+        --tiwalo-outline: #5dade2;
+        --tiwalo-focus: #5dade2;
+    }
+}

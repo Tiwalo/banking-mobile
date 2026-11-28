@@ -7,12 +7,10 @@ import { colors, radius, space, touchTarget } from './tokens';
 
 type ButtonProps = {
   label: string;
-  onPress: () => void;
   variant?: 'primary' | 'secondary';
-  disabled?: boolean;
   busy?: boolean;
   busyLabel?: string;
-};
+} & ({ onPress: () => void; disabled?: boolean } | { onPress?: never; disabled: true });
 
 export function Button({
   label,

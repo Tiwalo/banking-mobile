@@ -11,3 +11,9 @@ Source: previously supplied banking-core-api MVP plan (Pasted text(4).txt); actu
 | B5 feat/reconciliation-investigation | Web operator-only read findings; cross-repo release evidence, no mobile ops |
 
 Backend owns ledger, limits, ownership, statuses and financial data. PHP centavos stored as checked long/BIGINT, decimal strings on wire. B1 plans 201 and replay, 409 conflicting key, 422 definite business decline, retryable 503, RFC 9457; actual schema/semantics must be verified. Technical/network ambiguity stays unresolved until documented lookup or same-key replay; original definite decline replays even after funding. No assumptions about arbitrary transfer status lookup or receipt ID discovery after response loss; use documented same-key replay if lookup is unavailable. Do not invent a customer history feed, recipient name lookup/validation, filters, profile fields, account status enum, or ledger data. Record gaps with owner, required contract change, affected feature and safe interim state. No other repository edits without approval.
+
+## M2-02 contract gaps
+
+- **Display name** · Identity and banking API owners need to approve a customer display-name field and its source. Home uses a generic welcome.
+- **Profile** · Banking API owner needs to publish the permitted read-only customer fields and authorization rules. Profile provides session controls.
+- **Recent transactions and Activity** · Banking API owner needs to publish an owner-scoped history query with ordering, pagination, and transaction display fields. Home omits recent rows and Activity explains the unavailability. Receipt lookup remains available only by a known transfer ID and cannot enumerate activity.

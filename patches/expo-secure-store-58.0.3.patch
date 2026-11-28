@@ -1,0 +1,227 @@
+diff --git a/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStoreModule.kt b/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStoreModule.kt
+index a8e50e8874b775..53533812f6b76a 100644
+--- a/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStoreModule.kt
++++ b/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStoreModule.kt
+@@ -180,7 +180,7 @@ open class SecureStoreModule : Module() {
+     val prefs: SharedPreferences = getSharedPreferences()
+
+     if (value == null) {
+-      val success = prefs.edit().putString(keychainAwareKey, null).commit()
++      val success = prefs.commitOrRestore(mapOf(keychainAwareKey to null))
+       if (!success) {
+         throw WriteException("Could not write a null value to SecureStore", key, options.keychainService)
+       }
+@@ -208,12 +208,7 @@ open class SecureStoreModule : Module() {
+         authenticationHelper
+       )
+       encryptedItem.put(SCHEME_PROPERTY, AESEncryptor.NAME)
+-      saveEncryptedItem(encryptedItem, prefs, keychainAwareKey, options.requireAuthentication, options.keychainService)
+-
+-      // If a legacy value exists under this key we remove it to avoid unexpected errors in the future
+-      if (prefs.contains(key)) {
+-        prefs.edit().remove(key).apply()
+-      }
++      saveEncryptedItem(encryptedItem, prefs, keychainAwareKey, key, options.requireAuthentication, options.keychainService)
+     } catch (e: KeyPermanentlyInvalidatedException) {
+       if (!keyIsInvalidated) {
+         Log.w(TAG, "Key has been invalidated, retrying with the key deleted")
+@@ -229,22 +224,6 @@ open class SecureStoreModule : Module() {
+     }
+   }
+
+-  private fun saveEncryptedItem(encryptedItem: JSONObject, prefs: SharedPreferences, key: String, requireAuthentication: Boolean, keychainService: String): Boolean {
+-    // We need a way to recognize entries that have been saved under an alias created with getExtendedKeychain
+-    encryptedItem.put(USES_KEYSTORE_SUFFIX_PROPERTY, true)
+-    // In order to be able to have the same keys under different keychains
+-    // we need a way to recognize what is the keychain of the item when we read it
+-    encryptedItem.put(KEYSTORE_ALIAS_PROPERTY, keychainService)
+-    encryptedItem.put(AuthenticationHelper.REQUIRE_AUTHENTICATION_PROPERTY, requireAuthentication)
+-
+-    val encryptedItemString = encryptedItem.toString()
+-    if (encryptedItemString.isNullOrEmpty()) { // JSONObject#toString() may return null
+-      throw WriteException("Could not JSON-encode the encrypted item for SecureStore - the string $encryptedItemString is null or empty", key, keychainService)
+-    }
+-
+-    return prefs.edit().putString(key, encryptedItemString).commit()
+-  }
+-
+   private fun deleteItemImpl(key: String, options: SecureStoreOptions) {
+     val success = removeItem(
+       getSharedPreferences(),
+@@ -268,6 +247,7 @@ open class SecureStoreModule : Module() {
+     val allEntries: Map<String, *> = sharedPreferences.all
+
+     // In order to avoid decryption failures we need to remove all entries that are using the deleted encryption key
++    val staleKeys = mutableListOf<String>()
+     for ((key: String, value) in allEntries) {
+       val valueString = value as? String ?: continue
+       val jsonEntry = try {
+@@ -282,10 +262,14 @@ open class SecureStoreModule : Module() {
+       // Entries which don't require authentication use separate keychains which can't be invalidated,
+       // so we shouldn't delete them.
+       if (requireAuthentication && keychainService == entryKeychainService) {
+-        sharedPreferences.edit().remove(key).apply()
++        staleKeys.add(key)
+         Log.w(TAG, "Removing entry: $key due to the encryption key being deleted")
+       }
+     }
++
++    if (staleKeys.isNotEmpty()) {
++      sharedPreferences.commitOrRestore(staleKeys.associateWith { null })
++    }
+   }
+
+   /**
+@@ -375,7 +359,7 @@ open class SecureStoreModule : Module() {
+     private const val SHARED_PREFERENCES_NAME = "SecureStore"
+     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
+     private const val SCHEME_PROPERTY = "scheme"
+-    private const val KEYSTORE_ALIAS_PROPERTY = "keystoreAlias"
++    internal const val KEYSTORE_ALIAS_PROPERTY = "keystoreAlias"
+     const val USES_KEYSTORE_SUFFIX_PROPERTY = "usesKeystoreSuffix"
+     const val DEFAULT_KEYSTORE_ALIAS = "key_v1"
+     const val AUTHENTICATED_KEYSTORE_SUFFIX = "keystoreAuthenticated"
+@@ -389,7 +373,34 @@ internal fun removeItem(
+   key: String,
+   keychainAwareKey: String
+ ): Boolean {
+-  val removedFromPrefs = prefs.edit().remove(keychainAwareKey).remove(key).commit()
+-  val removedFromLegacyPrefs = legacyPrefs.edit().remove(key).commit()
++  val removedFromPrefs = prefs.commitOrRestore(mapOf(keychainAwareKey to null, key to null))
++  val removedFromLegacyPrefs = legacyPrefs.commitOrRestore(mapOf(key to null))
+   return removedFromPrefs && removedFromLegacyPrefs
+ }
++
++internal fun saveEncryptedItem(
++  encryptedItem: JSONObject,
++  prefs: SharedPreferences,
++  keychainAwareKey: String,
++  legacyKey: String,
++  requireAuthentication: Boolean,
++  keychainService: String
++) {
++  // We need a way to recognize entries that have been saved under an alias created with getExtendedKeychain
++  encryptedItem.put(SecureStoreModule.USES_KEYSTORE_SUFFIX_PROPERTY, true)
++  // In order to be able to have the same keys under different keychains
++  // we need a way to recognize what is the keychain of the item when we read it
++  encryptedItem.put(SecureStoreModule.KEYSTORE_ALIAS_PROPERTY, keychainService)
++  encryptedItem.put(AuthenticationHelper.REQUIRE_AUTHENTICATION_PROPERTY, requireAuthentication)
++
++  val encryptedItemString = encryptedItem.toString()
++  if (encryptedItemString.isNullOrEmpty()) { // JSONObject#toString() may return null
++    throw WriteException("Could not JSON-encode the encrypted item for SecureStore - the string $encryptedItemString is null or empty", keychainAwareKey, keychainService)
++  }
++
++  // A legacy value under this key is removed in the same commit to avoid unexpected errors in the future
++  val success = prefs.commitOrRestore(mapOf(keychainAwareKey to encryptedItemString, legacyKey to null))
++  if (!success) {
++    throw WriteException("Could not save the encrypted item to disk. The device may be out of storage or the app data directory may not be writable", keychainAwareKey, keychainService)
++  }
++}
+diff --git a/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStorePreferences.kt b/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStorePreferences.kt
+new file mode 100644
+index 00000000000000..88273bb4bed8ad
+--- /dev/null
++++ b/node_modules/expo-secure-store/android/src/main/java/expo/modules/securestore/SecureStorePreferences.kt
+@@ -0,0 +1,39 @@
++package expo.modules.securestore
++
++import android.content.SharedPreferences
++import android.util.Log
++
++// Android 7 `SharedPreferencesImpl` synchronizes on itself during disk writes, so locking on the
++// preferences object can deadlock. Writes are serialized on this object instead.
++private val writeLock = Any()
++
++/**
++ * Commits [changes] and returns the `commit()` result. A `null` value removes the key.
++ *
++ * `commit()` updates the in-memory map even when the disk write fails. In that case the previous
++ * values of the changed keys are put back, so a later successful write does not persist the failed
++ * change and reads return what is on disk.
++ */
++internal fun SharedPreferences.commitOrRestore(changes: Map<String, String?>): Boolean = synchronized(writeLock) {
++  val entries = all
++  val previous = changes.keys.associateWith { entries[it] }
++
++  val editor = edit()
++  for ((key, value) in changes) {
++    editor.putString(key, value)
++  }
++  if (editor.commit()) {
++    return@synchronized true
++  }
++
++  val restore = edit()
++  for ((key, value) in previous) {
++    when (value) {
++      null -> restore.remove(key)
++      is String -> restore.putString(key, value)
++      else -> Log.w(SecureStoreModule.TAG, "Could not restore the non-string value under $key after a failed write")
++    }
++  }
++  restore.commit()
++  false
++}
+diff --git a/node_modules/expo-secure-store/android/src/test/java/expo/modules/securestore/SecureStoreWriteTest.kt b/node_modules/expo-secure-store/android/src/test/java/expo/modules/securestore/SecureStoreWriteTest.kt
+new file mode 100644
+--- /dev/null
++++ b/node_modules/expo-secure-store/android/src/test/java/expo/modules/securestore/SecureStoreWriteTest.kt
+@@ -0,0 +1,51 @@
++package expo.modules.securestore
++
++import android.content.Context
++import org.json.JSONObject
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertThrows
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import java.io.File
++
++@RunWith(RobolectricTestRunner::class)
++class SecureStoreWriteTest {
++  private val context: Context
++    get() = RuntimeEnvironment.getApplication()
++
++  private val sharedPreferencesDir: File
++    get() = File(context.applicationInfo.dataDir, "shared_prefs")
++
++  private val prefs
++    get() = context.getSharedPreferences("SecureStore", Context.MODE_PRIVATE)
++
++  @Test
++  fun `throws and keeps the previous value when the encrypted item is not written to disk`() {
++    prefs.edit().putString("keychain-key", "v1").commit()
++
++    // Block writes by putting a file where Android expects the preferences directory.
++    // This also works on hosts that cannot make a directory read-only via File.setWritable.
++    val savedDir = File(sharedPreferencesDir.parentFile, "saved-shared-prefs")
++    assertTrue(sharedPreferencesDir.renameTo(savedDir))
++    try {
++      assertTrue(sharedPreferencesDir.createNewFile())
++      assertThrows(WriteException::class.java) {
++        saveEncryptedItem(JSONObject().put("ciphertext", "v2"), prefs, "keychain-key", "key", false, "keychain")
++      }
++      assertEquals("v1", prefs.getString("keychain-key", null))
++    } finally {
++      if (sharedPreferencesDir.isFile) assertTrue(sharedPreferencesDir.delete())
++      assertTrue(savedDir.renameTo(sharedPreferencesDir))
++    }
++
++    // A later successful write persists the whole in-memory map, so it must not carry the failed change.
++    assertTrue(prefs.edit().putString("unrelated", "value").commit())
++    val onDisk = File(sharedPreferencesDir, "SecureStore.xml").readText()
++    assertTrue(onDisk.contains("v1"))
++    assertFalse(onDisk.contains("v2"))
++  }
++}
+diff --git a/node_modules/expo-secure-store/android/src/test/resources/robolectric.properties b/node_modules/expo-secure-store/android/src/test/resources/robolectric.properties
+new file mode 100644
+--- /dev/null
++++ b/node_modules/expo-secure-store/android/src/test/resources/robolectric.properties
+@@ -0,0 +1 @@
++sdk=35

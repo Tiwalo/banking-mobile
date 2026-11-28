@@ -1,8 +1,9 @@
 import { CustomerScreen } from '@/navigation/shell';
+import { previewBuild } from '@/auth/runtime';
 import { EmptyState } from '@/ui/feedback-states';
 
 export default function Send() {
-  if (__DEV__) {
+  if (__DEV__ && previewBuild()) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- Strip synthetic screen content from production bundles.
     const { SendPreview }: typeof import('@/dev/navigation-fixtures') = require('@/dev/navigation-fixtures');
     return <SendPreview />;
@@ -10,7 +11,7 @@ export default function Send() {
 
   return (
     <CustomerScreen>
-      <EmptyState title="Sending is unavailable" description="Transfers will be available after sign-in is supported." />
+      <EmptyState title="Sending is unavailable" description="Transfers are unavailable in this build." />
     </CustomerScreen>
   );
 }

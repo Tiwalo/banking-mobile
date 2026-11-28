@@ -15,7 +15,10 @@ const tabRole = Platform.OS === 'ios' ? 'button' : 'tab';
 const environment = globalThis as typeof globalThis & { __DEV__: boolean };
 const development = environment.__DEV__;
 
+beforeEach(() => { process.env.EXPO_PUBLIC_NAVIGATION_PREVIEW = '1'; });
+
 afterEach(() => {
+  delete process.env.EXPO_PUBLIC_NAVIGATION_PREVIEW;
   environment.__DEV__ = development;
 });
 

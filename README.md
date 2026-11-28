@@ -11,11 +11,11 @@ npm ci
 npm start
 ```
 
-The entry screen runs without service credentials or an environment file. The Android, iOS, and web scripts start the Expo dev server for those targets. Keep screens in `src/app`. The optional `.env.example` documents the public banking API base URL and future identity settings. Anything prefixed with `EXPO_PUBLIC_` is visible in the app bundle.
+The entry screen runs without an environment file. For native sign-in, set the three public service settings in [.env.example](.env.example) to the approved synthetic environment and install a rebuilt development client. The Android and iOS scripts start Metro for an installed client. Credential entry takes place in the system browser. [Native configuration and verification](.eas/qa-flows/authentication.md)
 
 ## Development component gallery
 
-Run `npm start` and open the root screen in a compatible Expo Go client. The gallery opens with labeled synthetic examples. To check the production entry, use `npx expo start --no-dev --minify` and reload the client. See the [M0-02 plan](prompts/M0-02-design-system.md) for component and device verification.
+Set `EXPO_PUBLIC_NAVIGATION_PREVIEW=1` with the three service settings absent. Run `npm start` and open the root screen in a compatible Expo Go client. The gallery opens with labeled synthetic examples. To check the production entry, use `npx expo start --no-dev --minify` and reload the client. See the [M0-02 plan](prompts/M0-02-design-system.md) for component and device verification.
 
 ## Verify a change
 
