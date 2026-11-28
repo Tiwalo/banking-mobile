@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { createContext, type ComponentProps, type PropsWithChildren } from 'react';
+import { createContext, useContext, type ComponentProps, type PropsWithChildren } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { ScreenContainer } from '@/ui/screen-container';
@@ -30,13 +30,14 @@ const tabEdges = ['left', 'right'] as const;
 const detailEdges = ['bottom', 'left', 'right'] as const;
 
 export function CustomerScreen({ children, aboveTabs = false, scrollRef }: PropsWithChildren<{ aboveTabs?: boolean; scrollRef?: ComponentProps<typeof ScreenContainer>['scrollRef'] }>) {
+  const preview = useContext(PreviewContext);
   return (
     <ScreenContainer
       edges={aboveTabs ? detailEdges : tabEdges}
       scrollRef={scrollRef}
       header={(
         <TiwaloText variant="caption" style={styles.disclosure}>
-          Simulated banking{__DEV__ ? ' · Navigation preview' : ''}
+          Simulated banking{__DEV__ && preview?.active ? ' · Navigation preview' : ''}
         </TiwaloText>
       )}
     >
